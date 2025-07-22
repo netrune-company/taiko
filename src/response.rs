@@ -1,5 +1,5 @@
 use http::header::CONTENT_TYPE;
-use http::HeaderValue;
+use http::{HeaderValue, StatusCode};
 use http_body_util::Full;
 use hyper::body::Bytes;
 use serde::Serialize;
@@ -13,6 +13,30 @@ pub trait IntoResponse {
 impl IntoResponse for Response {
     fn into_response(self) -> Response {
         self
+    }
+}
+
+impl<T, E> IntoResponse for Result<T, E>
+where
+    T: IntoResponse,
+    E: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        match self {
+            Ok(ok) => ok.into_response(),
+            Err(err) => err.into_response(),
+        }
+    }
+}
+
+impl<T> IntoResponse for (StatusCode, T)
+where
+    T: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        let mut response = self.1.into_response();
+        *response.status_mut() = self.0;
+        response
     }
 }
 

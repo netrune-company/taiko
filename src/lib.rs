@@ -10,6 +10,7 @@ pub use handler::HttpHandler;
 pub use handler::Layer;
 pub use request::Request;
 pub use response::Response;
+pub use router::Router;
 
 pub mod prelude {
     pub use crate::app::App;
@@ -18,13 +19,11 @@ pub mod prelude {
     pub use crate::handler::Layer;
     pub use crate::request::Request;
     pub use crate::response::Response;
-
-    pub mod http {
-        pub use http::Request;
-        pub use http::Response;
-    }
+    pub use crate::router::Router;
 }
 
-pub mod handlers {
-    pub use crate::router::Router;
+pub mod http {
+    pub use http::Request;
+    pub use http::Response;
+    pub use http::StatusCode;
 }

@@ -17,8 +17,9 @@ where
     S: Clone + Send + Sync + 'static,
 {
     type Error = Empty;
-
-    async fn from_request(_: Request, _: &S) -> Result<Self, Self::Error> {
-        Ok(Empty)
+    
+    #[allow(clippy::manual_async_fn)]
+    fn from_request(_: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
+        async move { Ok(Empty) }
     }
 }

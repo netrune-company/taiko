@@ -39,14 +39,17 @@ where
 {
     type Error = JsonError;
 
-    async fn from_request(request: Request, _: &S) -> Result<Self, Self::Error> {
-        let bytes = request
-            .collect()
-            .await
-            .map_err(|_| JsonError)?
-            .to_bytes();
+    #[allow(clippy::manual_async_fn)]
+    fn from_request(request: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
+        async move {
+            let bytes = request
+                .collect()
+                .await
+                .map_err(|_| JsonError)?
+                .to_bytes();
 
-        Ok(Json(serde_json::from_slice(bytes.as_ref()).map_err(|_| JsonError)?))
+            Ok(Json(serde_json::from_slice(bytes.as_ref()).map_err(|_| JsonError)?))
+        }
     }
 }
 

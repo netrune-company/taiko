@@ -21,6 +21,7 @@ struct Endpoint<S> {
     methods: HashMap<Method, Arc<MethodHandler<S>>>,
 }
 
+#[derive(Default)]
 pub struct Router<S>
 {
     inner: matchit::Router<RouteId>,

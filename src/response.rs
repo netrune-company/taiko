@@ -1,8 +1,6 @@
-use http::header::CONTENT_TYPE;
-use http::{HeaderValue, StatusCode};
+use http::StatusCode;
 use http_body_util::Full;
 use hyper::body::Bytes;
-use serde::Serialize;
 
 pub type Response = http::Response<Full<Bytes>>;
 
@@ -36,31 +34,6 @@ where
     fn into_response(self) -> Response {
         let mut response = self.1.into_response();
         *response.status_mut() = self.0;
-        response
-    }
-}
-
-pub struct Json<T>(pub T)
-where
-    T: Serialize;
-
-impl<T> IntoResponse for Json<T>
-where
-    T: Serialize,
-{
-    fn into_response(self) -> Response {
-        let mut response = Response::new(
-            Full::new(
-                Bytes::from(
-                    serde_json::to_vec(&self.0).unwrap()
-                )
-            )
-        );
-
-        response
-            .headers_mut()
-            .append(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-
         response
     }
 }

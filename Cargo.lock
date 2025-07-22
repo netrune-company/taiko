@@ -538,7 +538,7 @@ dependencies = [
 
 [[package]]
 name = "taiko"
-version = "0.1.2"
+version = "0.1.21"
 dependencies = [
  "http",
  "http-body-util",

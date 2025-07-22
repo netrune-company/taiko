@@ -52,7 +52,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: FromRequest + Send + 'static,
+        I: FromRequest<S> + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::POST, handler)
@@ -64,7 +64,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: FromRequest + Send + 'static,
+        I: FromRequest<S> + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::PUT, handler)
@@ -76,7 +76,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: FromRequest + Send + 'static,
+        I: FromRequest<S> + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::GET, handler)
@@ -89,7 +89,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: FromRequest + Send + 'static,
+        I: FromRequest<S> + Send + 'static,
         O: IntoResponse + 'static,
     {
         let id = match self.inner.at(path) {
@@ -106,11 +106,13 @@ where
         let method_handler: Arc<MethodHandler<S>> = Arc::new(move |request, state| {
             let handler = Arc::new(handler.clone());
             Box::pin(async move {
-                let input = I::from_request(request);
-                handler
-                    .handle(input, state.clone())
-                    .await
-                    .into_response()
+                match I::from_request(request, &state).await {
+                    Ok(input) => handler
+                        .handle(input, state.clone())
+                        .await
+                        .into_response(),
+                    Err(error) => error.into_response()
+                }
             })
         });
 

@@ -10,7 +10,7 @@ pub trait Layer<H>
 }
 
 pub trait Handler<I, S> {
-    type Output;
+    type Output: Send + Sync;
 
     fn handle(&self, input: I, state: S) -> impl Future<Output=Self::Output> + Send + 'static;
 }
@@ -19,6 +19,7 @@ impl<F, Fut, I, O, S> Handler<I, S> for F
 where
     F: Fn(I, S) -> Fut + Send + Sync + 'static,
     Fut: Future<Output=O> + Send + 'static,
+    O: Send + Sync + 'static,
 {
     type Output = O;
 

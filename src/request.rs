@@ -10,10 +10,10 @@ pub trait FromRequest<S>: Sized {
     fn from_request(request: Request, state: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static;
 }
 
-pub trait FromRequestRef<S>: Sized {
+pub trait Extract<S>: Sized {
     type Error: IntoResponse + Send + Sync + 'static;
 
-    fn from_request_ref(request: &Request, state: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static;
+    fn extract(request: &Request, state: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static;
 }
 
 impl<S> FromRequest<S> for Request

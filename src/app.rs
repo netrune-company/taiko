@@ -63,7 +63,7 @@ impl<S, H> App<S, H>
 where
     S: Clone + Send + Sync + 'static,
     H: Handler<Request, S, Output=Response> + Send + Sync + 'static,
-    H::Future: Send + Sync,
+    H::Future: Send,
 {
     pub async fn listen(self, listener: TcpListener) {
         let app = self.boxed();

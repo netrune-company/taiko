@@ -11,9 +11,12 @@ pub trait FromRequest<S>: Sized {
 }
 
 pub trait Extract<S>: Sized {
-    type Error: IntoResponse + Send + Sync + 'static;
+    type Error;
 
-    fn extract(request: &Request, state: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static;
+    fn extract(
+        request: &Request,
+        state: &S,
+    ) -> impl Future<Output=Result<Self, Self::Error>>;
 }
 
 impl<S> FromRequest<S> for Request

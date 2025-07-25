@@ -138,8 +138,9 @@ where
     S: Clone + Send + Sync + 'static,
 {
     type Output = Response;
+    type Future = Pin<Box<dyn Future<Output=Self::Output> + Send>>;
 
-    fn handle(&self, mut req: Request, state: S) -> impl Future<Output=Self::Output> + Send + 'static {
+    fn handle(&self, mut req: Request, state: S) -> Self::Future {
         let (method, path) = (req.method().clone(), req.uri().path().to_string());
         let state = state.clone();
 
@@ -172,7 +173,7 @@ where
             }
         };
 
-        async move {
+        Box::pin(async move {
             match result {
                 Ok((h, params)) => {
                     req.extensions_mut().insert(params);
@@ -180,6 +181,6 @@ where
                 }
                 Err(res) => res,
             }
-        }
+        })
     }
 }

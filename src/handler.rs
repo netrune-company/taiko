@@ -1,5 +1,3 @@
-use crate::{Request, Response};
-use std::pin::Pin;
 use std::sync::Arc;
 
 pub trait Layer<H>
@@ -11,19 +9,21 @@ pub trait Layer<H>
 
 pub trait Handler<I, S> {
     type Output: Send + Sync;
+    type Future: Future<Output=Self::Output> + Send;
 
-    fn handle(&self, input: I, state: S) -> impl Future<Output=Self::Output> + Send + 'static;
+    fn handle(&self, input: I, state: S) -> Self::Future;
 }
 
 impl<F, Fut, I, O, S> Handler<I, S> for F
 where
-    F: Fn(I, S) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output=O> + Send + 'static,
-    O: Send + Sync + 'static,
+    F: Fn(I, S) -> Fut + Send + Sync,
+    Fut: Future<Output=O> + Send,
+    O: Send + Sync,
 {
     type Output = O;
+    type Future = Fut;
 
-    fn handle(&self, input: I, state: S) -> impl Future<Output=Self::Output> + Send + 'static {
+    fn handle(&self, input: I, state: S) -> Self::Future {
         self(input, state)
     }
 }
@@ -51,21 +51,9 @@ where
     H: Handler<I, S> + Send + Sync + 'static,
 {
     type Output = H::Output;
+    type Future = H::Future;
 
-    fn handle(&self, input: I, state: S) -> impl Future<Output=Self::Output> + 'static {
+    fn handle(&self, input: I, state: S) -> Self::Future {
         self.0.handle(input, state)
-    }
-}
-
-pub trait HttpHandler<S> {
-    fn handle(&self, request: Request, state: S) -> Pin<Box<dyn Future<Output=Response> + Send + 'static>>;
-}
-
-impl<H, S> HttpHandler<S> for H
-where
-    H: Handler<Request, S, Output=Response>,
-{
-    fn handle(&self, request: Request, state: S) -> Pin<Box<dyn Future<Output=Response> + Send + 'static>> {
-        Box::pin(self.handle(request, state))
     }
 }

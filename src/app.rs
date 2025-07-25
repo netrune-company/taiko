@@ -63,6 +63,7 @@ impl<S, H> App<S, H>
 where
     S: Clone + Send + Sync + 'static,
     H: Handler<Request, S, Output=Response> + Send + Sync + 'static,
+    H::Future: Send + Sync,
 {
     pub async fn listen(self, listener: TcpListener) {
         let app = self.boxed();
@@ -86,7 +87,7 @@ where
     S: Clone + Send + Sync + 'static,
     H: Handler<Request, S, Output=Response>,
 {
-    pub fn handle(&self, request: Request) -> impl Future<Output=Response> + Send + 'static {
+    pub fn handle(&self, request: Request) -> H::Future {
         self.handler.inner().handle(request, self.state.as_ref().clone())
     }
 }
@@ -101,6 +102,7 @@ impl<S, H> Service<Request> for AppService<S, H>
 where
     S: Clone + Send + Sync + 'static,
     H: Handler<Request, S, Output=Response>,
+    H::Future: Send + 'static,
 {
     type Response = Response;
     type Error = Infallible;

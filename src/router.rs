@@ -1,4 +1,4 @@
-use crate::request::FromRequest;
+use crate::request::Consume;
 use crate::response::IntoResponse;
 use crate::{Handler, Request, Response};
 use http::{Method, StatusCode};
@@ -53,7 +53,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: FromRequest<S> + Send + 'static,
+        I: Consume<S> + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::POST, handler)
@@ -65,7 +65,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: FromRequest<S> + Send + 'static,
+        I: Consume<S> + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::PUT, handler)
@@ -77,10 +77,35 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: FromRequest<S> + Send + 'static,
+        I: Consume<S> + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::GET, handler)
+    }
+
+    pub fn patch<I, O>(
+        self,
+        path: &str,
+        handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
+    ) -> Self
+    where
+        I: Consume<S> + Send + 'static,
+        O: IntoResponse + 'static,
+    {
+        self.insert(path, Method::PATCH, handler)
+    }
+
+
+    pub fn delete<I, O>(
+        self,
+        path: &str,
+        handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
+    ) -> Self
+    where
+        I: Consume<S> + Send + 'static,
+        O: IntoResponse + 'static,
+    {
+        self.insert(path, Method::DELETE, handler)
     }
 
     pub fn insert<I, O>(
@@ -90,7 +115,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: FromRequest<S> + Send + 'static,
+        I: Consume<S> + Send + 'static,
         O: IntoResponse + 'static,
     {
         let id = match self.inner.at(path) {
@@ -107,7 +132,7 @@ where
         let method_handler: Arc<MethodHandler<S>> = Arc::new(move |request, state| {
             let handler = Arc::new(handler.clone());
             Box::pin(async move {
-                match I::from_request(request, &state).await {
+                match I::consume(request, &state).await {
                     Ok(input) => handler
                         .handle(input, state.clone())
                         .await

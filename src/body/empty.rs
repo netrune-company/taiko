@@ -1,4 +1,4 @@
-use crate::request::FromRequest;
+use crate::request::{Consume};
 use crate::response::IntoResponse;
 use crate::{Request, Response};
 use http_body_util::Full;
@@ -12,14 +12,14 @@ impl IntoResponse for Empty {
     }
 }
 
-impl<S> FromRequest<S> for Empty
+impl<S> Consume<S> for Empty
 where
     S: Clone + Send + Sync + 'static,
 {
     type Error = Empty;
-    
+
     #[allow(clippy::manual_async_fn)]
-    fn from_request(_: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
+    fn consume(_: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
         async move { Ok(Empty) }
     }
 }

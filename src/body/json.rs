@@ -1,4 +1,5 @@
-use crate::request::FromRequest;
+use std::ops::Deref;
+use crate::request::Consume;
 use crate::response::IntoResponse;
 use crate::{Request, Response};
 use http::header::CONTENT_TYPE;
@@ -10,6 +11,14 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 pub struct Json<T>(pub T);
+
+impl<T> Deref for Json<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl<T> IntoResponse for Json<T>
 where
@@ -31,7 +40,7 @@ where
     }
 }
 
-impl<T, S> FromRequest<S> for Json<T>
+impl<T, S> Consume<S> for Json<T>
 where
     T: DeserializeOwned,
     S: Clone + Send + Sync + 'static,
@@ -39,7 +48,7 @@ where
     type Error = JsonError;
 
     #[allow(clippy::manual_async_fn)]
-    fn from_request(request: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
+    fn consume(request: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
         async move {
             let bytes = request
                 .collect()

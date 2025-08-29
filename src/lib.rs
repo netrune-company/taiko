@@ -4,6 +4,7 @@ mod router;
 pub mod body;
 pub mod request;
 pub mod response;
+pub mod extract;
 
 pub use app::App;
 pub use handler::Handler;
@@ -18,7 +19,6 @@ pub mod prelude {
     pub use crate::handler::Layer;
     pub use crate::request::Request;
     pub use crate::request::RequestExt;
-    pub use crate::request::StatelessRequestExt;
     pub use crate::response::Response;
     pub use crate::router::Router;
     pub use crate::body::Json;

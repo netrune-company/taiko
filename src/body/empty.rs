@@ -1,14 +1,14 @@
 use crate::request::{Consume};
 use crate::response::IntoResponse;
-use crate::{Request, Response};
+use crate::{Request, HttpResponse};
 use http_body_util::Full;
 use hyper::body::Bytes;
 
 pub struct Empty;
 
 impl IntoResponse for Empty {
-    fn into_response(self) -> Response {
-        Response::new(Full::new(Bytes::new()))
+    fn into_response(self) -> HttpResponse {
+        HttpResponse::new(Full::new(Bytes::new()))
     }
 }
 

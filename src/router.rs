@@ -1,6 +1,6 @@
 use crate::request::Consume;
 use crate::response::IntoResponse;
-use crate::{Handler, Request, Response};
+use crate::{Handler, Request, HttpResponse};
 use http::{Method, StatusCode};
 use http_body_util::Full;
 use hyper::body::Bytes;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 #[derive(Clone, Eq, PartialEq, Hash, Default)]
 struct RouteId(u32);
 
-type MethodHandler<S> = dyn Fn(Request, S) -> Pin<Box<dyn Future<Output=Response> + Send + 'static>>
+type MethodHandler<S> = dyn Fn(Request, S) -> Pin<Box<dyn Future<Output=HttpResponse> + Send + 'static>>
 + Send
 + Sync
 + 'static;
@@ -162,7 +162,7 @@ impl<S> Handler<Request, S> for Router<S>
 where
     S: Clone + Send + Sync + 'static,
 {
-    type Output = Response;
+    type Output = HttpResponse;
     type Future = Pin<Box<dyn Future<Output=Self::Output> + Send>>;
 
     fn handle(&self, mut req: Request, state: S) -> Self::Future {
@@ -170,7 +170,7 @@ where
         let state = state.clone();
 
         let result = {
-            let mut response = Response::new(Full::new(Bytes::new()));
+            let mut response = HttpResponse::new(Full::new(Bytes::new()));
             *response.status_mut() = StatusCode::NOT_FOUND;
 
             if let Ok(Match {

@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use crate::request::Consume;
 use crate::response::IntoResponse;
-use crate::{Request, Response};
+use crate::{Request, HttpResponse};
 use http::header::CONTENT_TYPE;
 use http::{HeaderValue, StatusCode};
 use http_body_util::BodyExt;
@@ -24,11 +24,11 @@ impl<T> IntoResponse for Json<T>
 where
     T: Serialize,
 {
-    fn into_response(self) -> Response {
+    fn into_response(self) -> HttpResponse {
         let bytes = serde_json::to_vec(&self.0)
             .expect("Serializable value could not serialize");
         
-        let mut response = Response::new(
+        let mut response = HttpResponse::new(
             Full::new(Bytes::from(bytes))
         );
 
@@ -69,8 +69,8 @@ pub enum JsonError {
     Deserialize
 }
 impl IntoResponse for JsonError {
-    fn into_response(self) -> Response {
-        let mut response = Response::new(Full::new(Bytes::new()));
+    fn into_response(self) -> HttpResponse {
+        let mut response = HttpResponse::new(Full::new(Bytes::new()));
         *response.status_mut() = StatusCode::BAD_REQUEST;
         response
     }

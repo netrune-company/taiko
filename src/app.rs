@@ -1,5 +1,5 @@
 use crate::handler::{Boxed, EchoHandler};
-use crate::{Handler, Layer, Request, Response};
+use crate::{Handler, Layer, Request, HttpResponse};
 use hyper::service::Service;
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
@@ -72,7 +72,7 @@ where
 impl<S, H> App<S, H>
 where
     S: Clone + Send + Sync + 'static,
-    H: Handler<Request, S, Output=Response> + Send + Sync + 'static,
+    H: Handler<Request, S, Output=HttpResponse> + Send + Sync + 'static,
     H::Future: Send,
 {
     pub async fn listen(self, listener: TcpListener) {
@@ -95,7 +95,7 @@ where
 impl<S, H> App<S, Boxed<H>>
 where
     S: Clone + Send + Sync + 'static,
-    H: Handler<Request, S, Output=Response>,
+    H: Handler<Request, S, Output=HttpResponse>,
 {
     pub fn handle(&self, request: Request) -> H::Future {
         self.handler.inner().handle(request, self.state.as_ref().clone())
@@ -106,15 +106,15 @@ where
 pub struct AppService<S, H>(App<S, Boxed<H>>, SocketAddr)
 where
     S: Clone + Send + Sync + 'static,
-    H: Handler<Request, S, Output=Response>;
+    H: Handler<Request, S, Output=HttpResponse>;
 
 impl<S, H> Service<Request> for AppService<S, H>
 where
     S: Clone + Send + Sync + 'static,
-    H: Handler<Request, S, Output=Response>,
+    H: Handler<Request, S, Output=HttpResponse>,
     H::Future: Send + 'static,
 {
-    type Response = Response;
+    type Response = HttpResponse;
     type Error = Infallible;
     type Future =
     Pin<Box<dyn Future<Output=Result<Self::Response, Self::Error>> + Send + 'static>>;

@@ -1,5 +1,5 @@
 use crate::response::IntoResponse;
-use crate::Response;
+use crate::HttpResponse;
 use hyper::body::Incoming;
 use crate::extract::Extract;
 
@@ -15,7 +15,7 @@ impl<S> Consume<S> for Request
 where
     S: Clone + Send + Sync + 'static,
 {
-    type Error = Response;
+    type Error = HttpResponse;
 
     #[allow(clippy::manual_async_fn)]
     fn consume(request: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {

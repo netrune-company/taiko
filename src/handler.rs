@@ -1,7 +1,7 @@
 use std::pin::Pin;
 use std::sync::Arc;
 use http_body_util::{BodyExt, Full};
-use crate::{Request, Response};
+use crate::{Request, HttpResponse};
 use crate::body::Empty;
 use crate::response::IntoResponse;
 
@@ -66,7 +66,7 @@ where
 pub struct EchoHandler;
 
 impl<S> Handler<Request, S> for EchoHandler {
-    type Output = Response;
+    type Output = HttpResponse;
     type Future = Pin<Box<dyn Future<Output = Self::Output> + Send + 'static>>;
 
     fn handle(&self, input: Request, _state: S) -> Self::Future {
@@ -75,7 +75,7 @@ impl<S> Handler<Request, S> for EchoHandler {
                 return Empty.into_response()
             };
 
-            Response::new(Full::new(body.to_bytes()))
+            HttpResponse::new(Full::new(body.to_bytes()))
         })
     }
 }

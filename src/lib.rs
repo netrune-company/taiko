@@ -17,8 +17,12 @@ pub mod prelude {
     pub use crate::handler::Handler;
     pub use crate::handler::Layer;
     pub use crate::request::Request;
+    pub use crate::request::RequestExt;
+    pub use crate::request::StatelessRequestExt;
     pub use crate::response::Response;
     pub use crate::router::Router;
+    pub use crate::body::Json;
+    pub use crate::body::Empty;
 }
 
 pub mod http {

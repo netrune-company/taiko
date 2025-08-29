@@ -30,3 +30,34 @@ where
         async move { Ok(request) }
     }
 }
+
+pub trait RequestExt<S> {
+    fn extract<E>(&self, state: &S) -> impl Future<Output=Result<E, E::Error>>
+    where
+        E: Extract<S>;
+}
+
+
+pub trait StatelessRequestExt {
+    fn body<T>(self) -> impl Future<Output = Result<T, T::Error>>
+    where
+        T: FromRequest<()>;
+}
+
+impl StatelessRequestExt for Request {
+    fn body<T>(self) -> impl Future<Output = Result<T, T::Error>>
+    where
+        T: FromRequest<()>
+    {
+        T::from_request(self, &())
+    }
+}
+
+impl<S> RequestExt<S> for Request {
+    fn extract<E>(&self, state: &S) -> impl Future<Output=Result<E, E::Error>>
+    where
+        E: Extract<S>
+    {
+        E::extract(self, state)
+    }
+}

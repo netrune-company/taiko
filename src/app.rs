@@ -1,4 +1,4 @@
-use crate::handler::Boxed;
+use crate::handler::{Boxed, EchoHandler};
 use crate::{Handler, Layer, Request, Response};
 use hyper::service::Service;
 use hyper_util::rt::{TokioExecutor, TokioIo};
@@ -14,18 +14,28 @@ pub struct App<S, H> {
     handler: H,
 }
 
-impl<S, H> App<S, H>
+impl<S> App<S, EchoHandler>
 {
-    pub fn new<I, O>(state: S, handler: H) -> App<S, H>
-    where
-        H: Handler<I, S, Output=O>,
+    pub fn new(state: S) -> App<S, EchoHandler>
     {
         App {
             state: Arc::new(state),
-            handler,
+            handler: EchoHandler,
         }
     }
 
+    pub fn handler<H>(self, handler: H) -> App<S, H>
+    where
+        H: Handler<Request, S>
+    {
+        App {
+            state: self.state,
+            handler
+        }
+    }
+}
+
+impl<S, H> App<S, H> {
     pub fn layer<L>(self, layer: L) -> App<S, L::Handler>
     where
         L: Layer<H>,

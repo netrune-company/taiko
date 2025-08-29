@@ -16,12 +16,11 @@ where
     T: Serialize,
 {
     fn into_response(self) -> Response {
+        let bytes = serde_json::to_vec(&self.0)
+            .expect("Serializable value could not serialize");
+        
         let mut response = Response::new(
-            Full::new(
-                Bytes::from(
-                    serde_json::to_vec(&self.0).unwrap()
-                )
-            )
+            Full::new(Bytes::from(bytes))
         );
 
         response
@@ -45,15 +44,21 @@ where
             let bytes = request
                 .collect()
                 .await
-                .map_err(|_| JsonError)?
+                .map_err(|_| JsonError::Deserialize)?
                 .to_bytes();
 
-            Ok(Json(serde_json::from_slice(bytes.as_ref()).map_err(|_| JsonError)?))
+            let serialized = serde_json::from_slice(bytes.as_ref())
+                .map_err(|_| JsonError::Deserialize)?;
+
+            Ok(Json(serialized))
         }
     }
 }
 
-pub struct JsonError;
+pub enum JsonError {
+    Serialize,
+    Deserialize
+}
 impl IntoResponse for JsonError {
     fn into_response(self) -> Response {
         let mut response = Response::new(Full::new(Bytes::new()));

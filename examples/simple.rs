@@ -12,7 +12,8 @@ async fn main() {
         .expect("Could not listen to 8080");
 
     let router = Router::new()
-        .get("/", index);
+        .get("/users/{test}", index)
+        .get("/users/me", index);
 
     App::new(())
         .handler(router)
@@ -63,11 +64,8 @@ impl<S> Extract<S> for Identity {
 }
 
 async fn index(request: Request, _state: ()) -> Result<Json<Payload>, HttpError> {
-    let identity = request.extract::<Identity>(&_state).await?;
-    let Json(payload) = request.body::<Json<Payload>>().await?;
-
     Ok(Json(Payload {
-        message: format!("You said '{}'", payload.message)
+        message: String::from("hi")
     }))
 }
 

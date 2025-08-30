@@ -27,6 +27,7 @@ pub struct Router<S>
     inner: matchit::Router<RouteId>,
     routes: HashMap<RouteId, Endpoint<S>>,
     next_id: RouteId,
+    path_to_id: HashMap<String, RouteId>
 }
 
 impl<S> Router<S>
@@ -38,6 +39,7 @@ where
             inner: matchit::Router::new(),
             routes: HashMap::new(),
             next_id: RouteId(0),
+            path_to_id: HashMap::new()
         }
     }
 
@@ -118,13 +120,12 @@ where
         I: Consume + Send + 'static,
         O: IntoResponse + 'static,
     {
-        let id = match self.inner.at(path) {
-            Ok(Match {
-                   value: existing_id, ..
-               }) => existing_id.clone(),
-            Err(_) => {
+        let id = match self.path_to_id.get(path) {
+            Some(existing_id) => existing_id.clone(),
+            None => {
                 let new_id = self.get_next_id();
                 self.inner.insert(path, new_id.clone()).unwrap();
+                self.path_to_id.insert(path.to_string(), new_id.clone());
                 new_id
             }
         };

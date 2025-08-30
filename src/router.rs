@@ -1,6 +1,6 @@
 use crate::request::Consume;
 use crate::response::IntoResponse;
-use crate::{Handler, Request, HttpResponse};
+use crate::{Handler, Request, Response};
 use http::{Method, StatusCode};
 use http_body_util::Full;
 use hyper::body::Bytes;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 #[derive(Clone, Eq, PartialEq, Hash, Default)]
 struct RouteId(u32);
 
-type MethodHandler<S> = dyn Fn(Request, S) -> Pin<Box<dyn Future<Output=HttpResponse> + Send + 'static>>
+type MethodHandler<S> = dyn Fn(Request, S) -> Pin<Box<dyn Future<Output=Response> + Send + 'static>>
 + Send
 + Sync
 + 'static;
@@ -53,7 +53,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: Consume<S> + Send + 'static,
+        I: Consume + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::POST, handler)
@@ -65,7 +65,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: Consume<S> + Send + 'static,
+        I: Consume + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::PUT, handler)
@@ -77,7 +77,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: Consume<S> + Send + 'static,
+        I: Consume + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::GET, handler)
@@ -89,7 +89,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: Consume<S> + Send + 'static,
+        I: Consume + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::PATCH, handler)
@@ -102,7 +102,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: Consume<S> + Send + 'static,
+        I: Consume + Send + 'static,
         O: IntoResponse + 'static,
     {
         self.insert(path, Method::DELETE, handler)
@@ -115,7 +115,7 @@ where
         handler: impl Handler<I, S, Output=O> + Clone + Send + Sync + 'static,
     ) -> Self
     where
-        I: Consume<S> + Send + 'static,
+        I: Consume + Send + 'static,
         O: IntoResponse + 'static,
     {
         let id = match self.inner.at(path) {
@@ -132,7 +132,7 @@ where
         let method_handler: Arc<MethodHandler<S>> = Arc::new(move |request, state| {
             let handler = Arc::new(handler.clone());
             Box::pin(async move {
-                match I::consume(request, &state).await {
+                match I::consume(request).await {
                     Ok(input) => handler
                         .handle(input, state.clone())
                         .await
@@ -162,7 +162,7 @@ impl<S> Handler<Request, S> for Router<S>
 where
     S: Clone + Send + Sync + 'static,
 {
-    type Output = HttpResponse;
+    type Output = Response;
     type Future = Pin<Box<dyn Future<Output=Self::Output> + Send>>;
 
     fn handle(&self, mut req: Request, state: S) -> Self::Future {
@@ -170,7 +170,7 @@ where
         let state = state.clone();
 
         let result = {
-            let mut response = HttpResponse::new(Full::new(Bytes::new()));
+            let mut response = Response::new(Full::new(Bytes::new()));
             *response.status_mut() = StatusCode::NOT_FOUND;
 
             if let Ok(Match {

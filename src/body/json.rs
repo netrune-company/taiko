@@ -1,7 +1,6 @@
 use std::ops::Deref;
-use crate::request::Consume;
-use crate::response::IntoResponse;
-use crate::{Request, HttpResponse};
+use crate::request::{Consume, Request};
+use crate::response::{IntoResponse};
 use http::header::CONTENT_TYPE;
 use http::{HeaderValue, StatusCode};
 use http_body_util::BodyExt;
@@ -9,6 +8,7 @@ use http_body_util::Full;
 use hyper::body::Bytes;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use crate::Response;
 
 pub struct Json<T>(pub T);
 
@@ -24,11 +24,11 @@ impl<T> IntoResponse for Json<T>
 where
     T: Serialize,
 {
-    fn into_response(self) -> HttpResponse {
+    fn into_response(self) -> Response {
         let bytes = serde_json::to_vec(&self.0)
             .expect("Serializable value could not serialize");
         
-        let mut response = HttpResponse::new(
+        let mut response = Response::new(
             Full::new(Bytes::from(bytes))
         );
 
@@ -40,15 +40,14 @@ where
     }
 }
 
-impl<T, S> Consume<S> for Json<T>
+impl<T> Consume for Json<T>
 where
     T: DeserializeOwned,
-    S: Clone + Send + Sync + 'static,
 {
     type Error = JsonError;
 
     #[allow(clippy::manual_async_fn)]
-    fn consume(request: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
+    fn consume(request: Request) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
         async move {
             let bytes = request
                 .collect()
@@ -69,8 +68,8 @@ pub enum JsonError {
     Deserialize
 }
 impl IntoResponse for JsonError {
-    fn into_response(self) -> HttpResponse {
-        let mut response = HttpResponse::new(Full::new(Bytes::new()));
+    fn into_response(self) -> Response {
+        let mut response = Response::new(Full::new(Bytes::new()));
         *response.status_mut() = StatusCode::BAD_REQUEST;
         response
     }

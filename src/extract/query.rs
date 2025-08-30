@@ -1,8 +1,8 @@
 use std::ops::Deref;
 use serde::de::DeserializeOwned;
 use crate::body::Empty;
-use crate::extract::Extract;
 use crate::Request;
+use crate::request::Extract;
 
 pub struct Query<T>(pub T);
 

@@ -3,8 +3,8 @@ use serde::de::{DeserializeOwned, MapAccess, Visitor, value};
 use std::collections::HashMap;
 use std::ops::Deref;
 use crate::body::Empty;
-use crate::extract::{Extract};
 use crate::Request;
+use crate::request::Extract;
 
 pub struct Path<T>(pub T);
 

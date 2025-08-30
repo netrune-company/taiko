@@ -1,51 +1,30 @@
-use crate::response::IntoResponse;
-use crate::HttpResponse;
+use std::future::Future;
 use hyper::body::Incoming;
-use crate::extract::Extract;
+use crate::body::Empty;
+use crate::response::{IntoResponse};
 
-pub type Request = http::Request<Incoming>;
+pub type Request<B = Incoming> = http::Request<B>;
 
-pub trait Consume<S>: Sized {
+pub trait Consume: Sized {
     type Error: IntoResponse + Send + Sync + 'static;
 
-    fn consume(request: Request, state: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static;
+    fn consume(request: Request) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static;
 }
 
-impl<S> Consume<S> for Request
-where
-    S: Clone + Send + Sync + 'static,
-{
-    type Error = HttpResponse;
+impl Consume for Request {
+    type Error = Empty;
 
     #[allow(clippy::manual_async_fn)]
-    fn consume(request: Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
+    fn consume(request: Request) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static {
         async move { Ok(request) }
     }
 }
 
-pub trait RequestExt<S> {
-    fn extract<E>(&self, state: &S) -> impl Future<Output=Result<E, E::Error>>
-    where
-        E: Extract<S>;
+pub trait Extract<S>: Sized {
+    type Error;
 
-
-    fn body<B>(self, state: &S) -> impl Future<Output=Result<B, B::Error>>
-    where
-        B: Consume<S>;
-}
-
-impl<S> RequestExt<S> for Request {
-    fn extract<E>(&self, state: &S) -> impl Future<Output=Result<E, E::Error>>
-    where
-        E: Extract<S>
-    {
-        E::extract(self, state)
-    }
-
-    fn body<B>(self, state: &S) -> impl Future<Output=Result<B, B::Error>>
-    where
-        B: Consume<S>
-    {
-        B::consume(self, state)
-    }
+    fn extract(
+        request: &Request,
+        state: &S,
+    ) -> impl Future<Output=Result<Self, Self::Error>>;
 }

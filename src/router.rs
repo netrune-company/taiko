@@ -135,7 +135,7 @@ where
             Box::pin(async move {
                 match I::consume(request).await {
                     Ok(input) => handler
-                        .handle(input, state.clone())
+                        .handle(input, state)
                         .await
                         .into_response(),
                     Err(error) => error.into_response()
@@ -143,7 +143,7 @@ where
             })
         });
 
-        let endpoint = self.routes.entry(id.clone()).or_insert_with(|| Endpoint {
+        let endpoint = self.routes.entry(id).or_insert_with(|| Endpoint {
             methods: HashMap::new(),
         });
 
@@ -167,20 +167,18 @@ where
     type Future = Pin<Box<dyn Future<Output=Self::Output> + Send>>;
 
     fn handle(&self, mut req: Request, state: S) -> Self::Future {
-        let (method, path) = (req.method().clone(), req.uri().path().to_string());
-        let state = state.clone();
+        let (method, path) = (req.method(), req.uri().path().to_string());
 
         let result = {
             let mut response = Response::new(Full::new(Bytes::new()));
             *response.status_mut() = StatusCode::NOT_FOUND;
 
             if let Ok(Match {
-                          value: route_id,
-                          params,
-                      }) = self.inner.at(&path)
-            {
+              value: route_id,
+              params,
+            }) = self.inner.at(&path) {
                 if let Some(endpoint) = self.routes.get(route_id) {
-                    if let Some(handler) = endpoint.methods.get(&method) {
+                    if let Some(handler) = endpoint.methods.get(method) {
                         let params = params
                             .iter()
                             .map(|(k, v)| (k.to_string(), v.to_string()))

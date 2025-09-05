@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use crate::request::{Consume, Request};
 use crate::response::{IntoResponse};
@@ -52,21 +53,25 @@ where
             let bytes = request
                 .collect()
                 .await
-                .map_err(|_| JsonError::Deserialize)?
+                .map_err(|e| JsonError(e.to_string()))?
                 .to_bytes();
 
             let serialized = serde_json::from_slice(bytes.as_ref())
-                .map_err(|_| JsonError::Deserialize)?;
+                .map_err(|e| JsonError(e.to_string()))?;
 
             Ok(Json(serialized))
         }
     }
 }
 
-pub enum JsonError {
-    Serialize,
-    Deserialize
+pub struct JsonError(pub String);
+
+impl Display for JsonError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
+
 impl IntoResponse for JsonError {
     fn into_response(self) -> Response {
         let mut response = Response::new(Full::new(Bytes::new()));

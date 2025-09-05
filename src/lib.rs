@@ -13,6 +13,8 @@ pub use response::Response;
 pub use request::Request;
 pub use router::Router;
 
+pub use http::StatusCode;
+
 pub mod prelude {
     pub use crate::app::App;
     pub use crate::handler::Handler;
@@ -22,10 +24,5 @@ pub mod prelude {
     pub use crate::router::Router;
     pub use crate::body::Json;
     pub use crate::body::Empty;
-}
-
-pub mod http {
-    use http_body_util::Full;
-    use hyper::body::{Bytes, Incoming};
-
+    pub use crate::StatusCode;
 }

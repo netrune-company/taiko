@@ -1,8 +1,8 @@
 use serde::Deserializer;
 use serde::de::{DeserializeOwned, MapAccess, Visitor, value};
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use std::ops::Deref;
-use crate::body::Empty;
 use crate::Request;
 use crate::request::Extract;
 
@@ -12,17 +12,17 @@ impl<S, T> Extract<S> for Path<T>
 where
     T: DeserializeOwned
 {
-    type Error = Empty;
+    type Error = PathError;
 
     fn extract(request: &Request, _: &S) -> impl Future<Output=Result<Self, Self::Error>> {
         async {
             let params = request
                 .extensions()
                 .get::<HashMap<String, String>>()
-                .ok_or_else(|| Empty)?;
+                .ok_or_else(|| PathError("No parameters in the request.".to_string()))?;
 
-            let path =
-                T::deserialize(PathDeserializer(params)).map_err(|_| Empty)?;
+            let path = T::deserialize(PathDeserializer(params))
+                .map_err(|e| PathError(e.to_string()))?;
 
             Ok(Path(path))
         }
@@ -34,6 +34,14 @@ impl<T> Deref for Path<T> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+pub struct PathError(pub String);
+
+impl Display for PathError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

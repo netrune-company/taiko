@@ -7,7 +7,11 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::sync::Arc;
+use hyper_util::server::conn::auto::Builder;
+use hyper_util::server::graceful::GracefulShutdown;
 use tokio::net::TcpListener;
+use tokio::{pin, signal, spawn};
+use tracing::{error, info};
 
 pub struct App<S, H> {
     state: Arc<S>,
@@ -76,19 +80,35 @@ where
     H::Future: Send,
 {
     pub async fn listen(self, listener: TcpListener) {
+        info!("Listening...");
         let app = self.boxed();
-        loop {
-            let (stream, client) = listener.accept().await.unwrap();
-            let io = TokioIo::new(stream);
-            let app = app.clone();
+        let graceful = GracefulShutdown::new();
+        let http = Builder::new(TokioExecutor::new());
 
-            tokio::spawn(async move {
-                auto::Builder::new(TokioExecutor::new())
-                    .serve_connection_with_upgrades(io, AppService(app, client))
-                    .await
-                    .unwrap_or_else(|e| eprintln!("Error serving connection: {e:?}"));
-            });
+        loop {
+            tokio::select! {
+                _ = signal::ctrl_c() => {
+                    break;
+                }
+                Ok((stream, client)) = listener.accept() => {
+                    let app = app.clone();
+                    let io = TokioIo::new(stream);
+                    let connection = graceful.watch(http
+                        .serve_connection_with_upgrades(io, AppService(app, client))
+                        .into_owned());
+
+                    spawn(async move {
+                        if let Err(err) = connection.await {
+                            error!("Connection error: {:?}", err);
+                        }
+                    });
+                }
+            }
         }
+
+        info!("Waiting for connections to complete...");
+        graceful.shutdown().await;
+        info!("All connections closed. Shutting down.");
     }
 }
 
@@ -121,7 +141,6 @@ where
 
     fn call(&self, mut req: Request) -> Self::Future {
         req.extensions_mut().insert(self.1);
-        req.extensions_mut().insert(self.0.state.clone());
 
         let future = self.0.handle(req);
         Box::pin(async move { Ok(future.await) })

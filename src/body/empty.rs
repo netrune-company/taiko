@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::request::{Consume, Request};
 use crate::response::{IntoResponse};
 use crate::Response;
@@ -9,6 +10,12 @@ pub struct Empty;
 impl IntoResponse for Empty {
     fn into_response(self) -> Response {
         Response::new(Full::new(Bytes::new()))
+    }
+}
+
+impl Display for Empty {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "")
     }
 }
 

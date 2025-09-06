@@ -1,12 +1,13 @@
+use std::fmt::Display;
 use std::future::Future;
 use hyper::body::Incoming;
 use crate::body::Empty;
-use crate::response::{IntoResponse};
+use crate::response::IntoResponse;
 
 pub type Request<B = Incoming> = http::Request<B>;
 
 pub trait Consume: Sized {
-    type Error: IntoResponse + Send + Sync + 'static;
+    type Error: Display + Send + Sync + 'static;
 
     fn consume(request: Request) -> impl Future<Output=Result<Self, Self::Error>> + Send + 'static;
 }
@@ -21,7 +22,7 @@ impl Consume for Request {
 }
 
 pub trait Extract<S>: Sized {
-    type Error;
+    type Error: Display + Send + Sync + 'static;
 
     fn extract(
         request: &Request,

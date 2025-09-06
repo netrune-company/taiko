@@ -8,6 +8,7 @@ use matchit::Match;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
+use crate::body::Empty;
 
 #[derive(Clone, Eq, PartialEq, Hash, Default)]
 struct RouteId(u32);
@@ -138,7 +139,11 @@ where
                         .handle(input, state)
                         .await
                         .into_response(),
-                    Err(error) => error.into_response()
+                    Err(_) => {
+                        let mut response = Empty.into_response();
+                        *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                        response
+                    }
                 }
             })
         });
